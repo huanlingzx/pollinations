@@ -31,10 +31,6 @@ export async function POST(request) {
       width: Number(width),
       height: Number(height),
       model: model,
-      nologo: nologo,
-      private: privateImage,
-      enhance: enhance,
-      safe: safe,
     };
 
     // 处理种子：如果未填写，则生成一个随机数
@@ -43,6 +39,21 @@ export async function POST(request) {
       finalSeed = Math.floor(Math.random() * 1000000000); // 确保是数字
     }
     params.seed = Number(finalSeed);
+
+    // === 优化布尔参数：仅当为 true 时才添加 ===
+    if (nologo) {
+      params.nologo = true;
+    }
+    if (privateImage) { // 注意这里是 privateImage
+      params.private = true;
+    }
+    if (enhance) {
+      params.enhance = true;
+    }
+    if (safe) {
+      params.safe = true;
+    }
+    // ===========================================
 
     const queryParams = new URLSearchParams(params);
     const encodedPrompt = encodeURIComponent(prompt);
