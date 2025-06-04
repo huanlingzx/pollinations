@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const maxDuration = 60; // 设置最大持续时间为 60 秒
+
 export async function POST(request) {
   // 确保 API Token 存在
   const POLLINATIONS_API_TOKEN = process.env.POLLINATIONS_API_TOKEN;
