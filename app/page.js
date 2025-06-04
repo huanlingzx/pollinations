@@ -98,30 +98,82 @@ export default function HomePage() {
   // === 核心业务逻辑 ===
 
   // 处理图片生成请求
-  const handleGenerateImage = useCallback(async (params) => {
+  const handleGenerateImage = useCallback(async (params, useBackendApi) => {
     setLoading(true);
     setError(null);
     setImageUrl(null); // 清除旧的图片
     setImageMetadata(null); // 清除旧的AI元数据
     setGeneratedParams(null); // 清除旧的生成参数
 
+    
     try {
-      const response = await fetch('/api/generate-image', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(params),
-      });
+      let response;
+      if (useBackendApi) {
+        // 通过后端 API 调用 Pollinations
+        response = await fetch('/api/generate-image', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(params),
+        });
 
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || `HTTP错误! 状态码: ${response.status}`);
-        } else {
+        if (!response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP错误! 状态码: ${response.status}`);
+          } else {
+            const errorText = await response.text();
+            throw new Error(`HTTP错误! 状态码: ${response.status}, 消息: ${errorText.substring(0, 200)}...`);
+          }
+        }
+      } else {
+        // 直接前端调用 Pollinations API
+        // 验证 prompt 参数
+        if (!params.prompt) {
+          throw new Error('提示词 (prompt) 是必填项。');
+        }
+
+        // 准备 Pollinations API 的参数
+        const currentParams = {
+          width: params.width,
+          height: params.height,
+          model: params.model,
+        };
+
+        // 处理种子：如果未填写，则生成一个随机数
+        let finalSeed = params.seed;
+        if (!finalSeed || isNaN(Number(finalSeed))) {
+          finalSeed = Math.floor(Math.random() * 1000000000); // 确保是数字
+        }
+        currentParams.seed = Number(finalSeed);
+
+        // === 优化布尔参数：仅当为 true 时才添加 ===
+        if (params.nologo) {
+          currentParams.nologo = true;
+        }
+        if (params.privateImage) { // 注意这里是 privateImage
+          currentParams.private = true;
+        }
+        if (params.enhance) {
+          currentParams.enhance = true;
+        }
+        if (params.safe) {
+          currentParams.safe = true;
+        }
+        // ===========================================
+
+        const queryParams = new URLSearchParams(currentParams);
+        const encodedPrompt = encodeURIComponent(params.prompt);
+        const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?${queryParams.toString()}`;
+        console.log('前端正在直接调用 Pollinations API:', url);
+        response = await fetch(url);
+        if (!response.ok) {
           const errorText = await response.text();
-          throw new Error(`HTTP错误! 状态码: ${response.status}, 消息: ${errorText.substring(0, 200)}...`);
+          throw new Error(
+            `HTTP错误! 状态码: ${response.status}, 消息: ${errorText}`
+          );
         }
       }
 
@@ -148,10 +200,10 @@ export default function HomePage() {
     } finally {
       setLoading(false);
     }
-  }, [createAndStoreBlobUrl, revokeBlobUrl]);
+  }, [createAndStoreBlobUrl]);
 
 
-  // 辅助函数：下载图��� (通用)
+  // 辅助函数：下载图片 (通用)
   const handleDownloadImage = useCallback(async (imgUrl, imgPrompt, format = 'jpeg') => {
     if (!imgUrl) {
       toast.error("下载失败", {
@@ -255,7 +307,7 @@ export default function HomePage() {
   const handleImportParams = useCallback((params) => {
     setFormInitialParams(params); // 将参数传递给表单组件
     toast.info("参数已导入", { // 使用 toast.info
-      description: "生成参数已导入��表单。",
+      description: "生成参数已导入表单。",
     });
   }, []);
 

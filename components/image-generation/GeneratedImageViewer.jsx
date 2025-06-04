@@ -39,8 +39,10 @@ export function GeneratedImageViewer({
             <Image
               src={imageUrl}
               alt={generatedParams?.prompt || '生成的图片'}
-              width={generatedParams?.width || 1024}
-              height={generatedParams?.height || 1024}
+              // width={generatedParams?.width || 1024}
+              // height={generatedParams?.height || 1024}
+              fill
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               unoptimized={true}
               className="object-contain max-w-full max-h-full rounded-md shadow-md cursor-pointer"
               onClick={() => onOpenImageDialog({
@@ -75,6 +77,12 @@ export function GeneratedImageViewer({
               <Save className="h-4 w-4 mr-2" />
               保存图片
             </Button>
+            {generatedParams && (
+              <Button onClick={() => setIsParamsDialogOpen(true)} variant="secondary">
+                <BookOpen className="h-4 w-4 mr-2" />
+                查看图片参数
+              </Button>
+            )}
           </div>
           {generatedParams && (
             <ImageParamsDialog
@@ -83,12 +91,6 @@ export function GeneratedImageViewer({
               params={generatedParams}
               metadata={imageMetadata}
             />
-          )}
-          {generatedParams && (
-            <Button variant="secondary" className="mt-2" onClick={() => setIsParamsDialogOpen(true)}>
-              <BookOpen className="h-4 w-4 mr-2" />
-              查看图片参数
-            </Button>
           )}
         </div>
       )}

@@ -71,7 +71,10 @@ export async function POST(request) {
       method: 'GET', // Pollinations API 依然是 GET 请求
       headers: {
         'Authorization': `Bearer ${POLLINATIONS_API_TOKEN}`,
-        // 可以在这里添加其他必要的头，例如 User-Agent，但通常不是必需的
+        // IMPORTANT: Add a client-side timeout to the fetch request
+        // This helps prevent hanging connections and provides a more specific error
+        signal: AbortSignal.timeout(58 * 1000) // 例如，在 55 秒后强制超时
+                                            // 留一点余量给 Vercel 函数的 60 秒最大执行时间
       },
     });
 

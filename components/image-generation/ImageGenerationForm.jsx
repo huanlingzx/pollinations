@@ -18,7 +18,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { Textarea } from '@/components/ui/textarea';
-import { Info, RefreshCcw } from 'lucide-react';
+import { Info, RefreshCcw, Server, Globe } from 'lucide-react';
 
 // 定义模型列表
 const availableModels = [
@@ -40,7 +40,7 @@ const dimensionPresets = {
 
 export function ImageGenerationForm({ onGenerate, loading, initialParams = {}, onEnhancePrompt }) {
   const [prompt, setPrompt] = useState(initialParams.prompt || '一片美丽的海上日落');
-  const [width, setWidth] = useState(initialParams.width || 1024);
+  const [width, setWidth] = useState(initialParams.width || 576);
   const [height, setHeight] = useState(initialParams.height || 1024);
   const [seed, setSeed] = useState(initialParams.seed ? String(initialParams.seed) : '');
   const [model, setModel] = useState(initialParams.model || 'flux');
@@ -55,14 +55,17 @@ export function ImageGenerationForm({ onGenerate, loading, initialParams = {}, o
       dimensionPresets[key].width === initialParams.width &&
       dimensionPresets[key].height === initialParams.height
     );
-    return matchedPreset || 'hd'; // 默认高清或自定义
+    return matchedPreset || 'portrait9_16'; // 默认高清或自定义
   });
+
+  // API 调用方式状态
+  const [useBackendApi, setUseBackendApi] = useState(false); // 默认使用后端API
 
   // 当 initialParams 改变时更新表单状态
   useEffect(() => {
     if (initialParams && Object.keys(initialParams).length > 0) {
       setPrompt(initialParams.prompt || '');
-      setWidth(initialParams.width || 1024);
+      setWidth(initialParams.width || 576);
       setHeight(initialParams.height || 1024);
       setSeed(initialParams.seed ? String(initialParams.seed) : '');
       setModel(initialParams.model || 'flux');
@@ -115,14 +118,27 @@ export function ImageGenerationForm({ onGenerate, loading, initialParams = {}, o
       enhance,
       safe,
     };
-    onGenerate(params);
-  }, [prompt, width, height, seed, model, nologo, privateImage, enhance, safe, onGenerate]);
+    onGenerate(params, useBackendApi);
+  }, [prompt, width, height, seed, model, nologo, privateImage, enhance, safe, useBackendApi, onGenerate]);
 
   return (
     <TooltipProvider>
       <div className="w-full p-6 bg-white shadow-lg rounded-lg h-full flex-grow flex flex-col mb-4 md:mb-0 md:mr-4 overflow-y-auto">
         <h1 className="text-2xl font-bold mb-6 text-center">AI 图像生成器</h1>
         <form onSubmit={handleSubmit} className="space-y-4 flex-grow">
+          {/* API 调用方式切换 */}
+          <div className="flex items-center justify-between p-3 border rounded-md bg-gray-50">
+            <Label htmlFor="api-mode" className="flex items-center gap-2 text-sm font-medium">
+              {useBackendApi ? <Server className="h-4 w-4" /> : <Globe className="h-4 w-4" />}
+              API 调用方式: {useBackendApi ? '后端代理' : '前端直连'}
+            </Label>
+            <Switch
+              id="api-mode"
+              checked={useBackendApi}
+              onCheckedChange={setUseBackendApi}
+            />
+          </div>
+
           <Button
             type="button"
             onClick={onEnhancePrompt} // 回调父组件的提示词增强逻辑
